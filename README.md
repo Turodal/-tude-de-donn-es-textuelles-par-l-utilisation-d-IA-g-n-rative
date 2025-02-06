@@ -20,6 +20,7 @@ Le script charge un fichier Excel contenant des commentaires et sélectionne les
 
 - **Fichier source** : `Donnees_completes_CWays_2024.xlsx`
 - **Colonnes utilisées** : `['BEA1', 'REC_DIPLOME', 'Rec_sexe', 'Rec_age', 'Q0_4', 'CC', 'Rec_CSP', 'Rec_CSP2']`
+- Attention le programme ne marche qu'avec des colonnes qualitatives et non quantitative
 
 ### 2. Définition des Paramètres
 
