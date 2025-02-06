@@ -46,12 +46,10 @@ Data = pd.read_excel(file_path, sheet_name="Labels", header = 1)
 # Charger le fichier sans changer le nom de la variable (Data)
 #Data = pd.read_excel(file_path)
 Data = Data[['BEA1', 'REC_DIPLOME', 'Rec_sexe', 'Rec_age', 'Q0_4', 'CC', 'Rec_CSP', "Rec_CSP2"]]  # Sélectionner les colonnes d'intérêt
-text = 'BEA1' # remplacer avec votre colonne contenant les commentaires
-model = "W2V"
+text = 'BEA1' # remplacer avec votre colonne contenant les données textuelles
+model = "W2V" # model (W2V ou SBERT) que l'on veut utiliser pour l embedding
 
 
-output_folder = "cluster_outputs"  # Dossier de téléchargement
-os.makedirs(output_folder, exist_ok=True)
 
 ####################
 # AGRUMENTS
@@ -73,10 +71,14 @@ Cluster = ['Cluster_3', "Cluster_5", "Cluster_10"]
 # nom des colonnes qui contiennent les themes (du type Thème_Cluster)
 theme = ['Thème_Cluster_3', 'Thème_Cluster_5', 'Thème_Cluster_10']
 
+#Cluster le moins précis que l'on veut afficher sur le graphique
 Cluster_debut = 'Cluster_3'
+#Cluster le plus précis que l'on veut afficher sur le graphique
 Cluster_fin =   "Cluster_10"
-### Filtre en fonction du nombre de mots
+
 TEXT = Data[text] 
+### Filtre en fonction du nombre de mots
+
 
 def filtre(df, TEXT, min_mots, max_mots):
     """
@@ -308,7 +310,21 @@ zoom(distances)
 ##################
 
 def clustering(data, embedding, clusters):
-    # Loop through each cluster size
+    """
+    
+
+    Parameters
+    ----------
+    data : Dataframe contient les commentaires que l on etudie
+    embedding : dataframe, contient les embedding des phrases.
+    clusters : liste qui permet de savoir en combien de clasee la classification sera faite
+
+    Returns
+    -------
+    un dataframe avec les colonnes de data et autant de nouvelle colonne que la longueur de clusters.
+
+    """
+    # Ralise les differents 
     df_clusters = pd.DataFrame()
 
     for k in n_clusters:
@@ -402,6 +418,7 @@ def generate_cluster_samples(df, cluster_column, text_column, promp, prompt2, k=
     return (data_complete2, result_df)
 
 def creation_theme(data_complete, cluster, text,prompt,prompt2, k = 1, n = 60):
+    #permet de créer les thèmes pour tous les clusters en même temps
     for elem in cluster:
         print(elem)
         data_complete, theme_test_cluster6 = generate_cluster_samples(data_complete, elem, text,prompt,prompt2, k = 1, n = 60)
@@ -474,6 +491,7 @@ def generate_samples(data, Cluster, numero, commentaire, prompt):
     return(reponse)
 
 def cherche_commentaire(data, df_emebdding, Cluster, numero, commentaire, key = False):
+    #cherche le commentaire le plus proche du centroïde d une classe
     if key == False :
         embedding_et_data = pd.concat([data, df_emebdding], axis = 1)
     else :
@@ -623,7 +641,28 @@ def generate_cluster_graphs(data_complete, Clusters, theme, cluster_début, clus
            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033', 
            '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc', 
            '#00ffcc', '#ff9966']):
-    """Génère des graphiques pour chaque cluster en fonction de la hiérarchie."""
+    """
+    
+
+    Parameters
+    ----------
+    data_complete : dataframe qui contient les donnees textuelles
+    Clusters : liste contenant le nom des colonnes ou on retrouve les clusters
+    theme : liste contenant le nom des colonnes ou on retrouve les themes des clusters.
+    cluster_début : cluster le moins fin que l on veut afficher
+    cluster_fin : cluster le plus fin que l on veut afficher
+    embedding : dataframe qui contient l embedding des phrases de data_complete
+    invisible : Booleen si on veut que les noeuds intermediaires soient invisibilise (True) ou non (False)  The default is False.
+    commentaire : Booleen si on veut que sur le cluster le plus precis il s affiche le commentaire juge comme le plus representatif de la classes The default is False.
+    key : nom de la colonne ou il y a une cle primaire entre data_complete et emebdding The default is False.
+    color : liste de differentes couleurs. The default is ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',           '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033',           '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc',           '#00ffcc', '#ff9966'].
+
+    Returns
+    -------
+    graphique.
+
+    """
+
     clusters_6 = data_complete[cluster_début].unique()
     if all(isinstance(item, (int, float)) for item in Clusters):
         Clusters = data_complete.columns[Clusters]
@@ -681,7 +720,27 @@ def generate_one_graphe(data_complete, Clusters, theme, cluster_début, cluster_
            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033', 
            '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc', 
            '#00ffcc', '#ff9966']):
-    """Génère des graphiques pour chaque cluster en fonction de la hiérarchie."""
+    """Génère des graphiques pour chaque cluster en fonction de la hiérarchie
+        
+
+        Parameters
+        ----------
+        data_complete : dataframe qui contient les donnees textuelles
+        Clusters : liste contenant le nom des colonnes ou on retrouve les clusters
+        theme : liste contenant le nom des colonnes ou on retrouve les themes des clusters.
+        cluster_début : (str) cluster le moins fin que l on veut afficher
+        cluster_fin : (str) cluster le plus fin que l on veut afficher
+        embedding : dataframe qui contient l embedding des phrases de data_complete
+        invisible : Booleen si on veut que les noeuds intermediaires soient invisibilise (True) ou non (False)  The default is False.
+        commentaire : Booleen si on veut que sur le cluster le plus precis il s affiche le commentaire juge comme le plus representatif de la classes The default is False.
+        key : nom de la colonne ou il y a une cle primaire entre data_complete et emebdding The default is False.
+        color : liste de differentes couleurs. The default is ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',           '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033',           '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc',           '#00ffcc', '#ff9966'].
+
+        Returns
+        -------
+        graphique.
+
+        """
 
     if all(isinstance(item, (int, float)) for item in Clusters):
 
@@ -733,6 +792,28 @@ def generate_graphe(data_complete, Clusters, theme, cluster_début, cluster_fin,
            '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033', 
            '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc', 
            '#00ffcc', '#ff9966']):
+    """
+    
+
+    Parameters
+    ----------
+    data_complete : dataframe qui contient les donnees textuelles
+    Clusters : liste contenant le nom des colonnes ou on retrouve les clusters
+    theme : liste contenant le nom des colonnes ou on retrouve les themes des clusters.
+    cluster_début : (str) cluster le moins fin que l on veut afficher
+    cluster_fin : (str) cluster le plus fin que l on veut afficher
+    embedding : dataframe qui contient l embedding des phrases de data_complete
+    graphe = Booleen si on veut afficher autant de graphe que de classe qu il y a dans le cluster le moins precis (True), sinon 1 graphique (False)
+    invisible : Booleen si on veut que les noeuds intermediaires soient invisibilise (True) ou non (False)  The default is False.
+    commentaire : Booleen si on veut que sur le cluster le plus precis il s affiche le commentaire juge comme le plus representatif de la classes The default is False.
+    key : nom de la colonne ou il y a une cle primaire entre data_complete et emebdding The default is False.
+    color : liste de differentes couleurs. The default is ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b',           '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', '#f58231', '#ff0033',           '#33ff77', '#ff66cc', '#ffcc00', '#0066cc', '#33ccff', '#6600cc',           '#00ffcc', '#ff9966'].
+
+    Returns
+    -------
+    graphique.
+
+    """
     if graphe == True:
         generate_cluster_graphs(data_complete, Clusters, theme, cluster_début, cluster_fin, embedding, invisible, commentaire, key, color )
     else:
@@ -779,7 +860,7 @@ def couper_liste_a_partir_de_valeur_inverse(liste, valeur_cible):
 
 
 def parent_color(color, data, Clusters):
-    len(Clusters)
+    #permet d'attribuer des couleurs à toutes les parents selon le nombre de couleur que l on dispose 
     nb_color = len(color)
     nb_class = 0
     
@@ -802,6 +883,7 @@ def parent_color(color, data, Clusters):
 
 
 def children_color(dictionary, data, Clusters):
+    #permet d'attribuer les même couleurs aux parents et aux enfants
     longueur_dict = len(dictionary)
     longueur_class = len(Clusters)
     data2 = data.copy()
@@ -846,7 +928,6 @@ couleurs_rgba = [colors.to_rgba(couleur) for couleur in couleur]
 
     
 data_complete2 = creation_theme(data_complete, Cluster, text,prompt,prompt2, k = 1, n = 60)
-test2 = generate_graphe(data_complete2, Cluster, theme, Cluster_debut, Cluster_fin, Embeds,graphe = True, invisible = False, commentaire = text, key = "key", color = couleurs_rgba)
 
 
 import plotly.graph_objects as go
@@ -1167,6 +1248,7 @@ def detect_variable_types(data, threshold=5):
     return categorical, continuous
 
 def catdes_du_pauvre(data, variable, prob, Cluster, theme, text):
+    #fait une analyse de la variance sur les variables qualitatives
     # Supprime l'élément 'variable' de la liste Cluster
     Cluster = [item for item in Cluster if item != variable]
     
@@ -1267,4 +1349,5 @@ def catedes_colonne(data, quanti, quali, variable):
     
     return merged_data
 
+test2 = generate_graphe(data_complete2, Cluster, theme, Cluster_debut, Cluster_fin, Embeds, graphe = True, invisible = False, commentaire = text, key = "key", color = couleurs_rgba)
 generate_interactive_graph(data_complete2, Cluster, theme, Cluster_debut, Cluster_fin, Embeds, commentaire=text, key = "key")
