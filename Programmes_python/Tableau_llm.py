@@ -8,21 +8,11 @@ Created on Tue Dec 17 09:05:14 2024
 
 from ollama import chat
 from ollama import ChatResponse
-
-from ollama import chat
-import ollama
-
-import numpy as np
 import pandas as pd
-from gensim.models import Word2Vec
 import random as rd
 import os
-import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from scipy.stats import gaussian_kde
+
 rd.seed(a=63, version=2)
 
 
@@ -96,89 +86,53 @@ prompt_niveau_langue_homme = "Le consommateur répond à une question sur la bea
 
 prompt_niveau_langue_femme = "Le consommateur répond à une question sur la beauté chez la femme. Indique si le consommateur utilise un langage soutenu.  - Réponds **uniquement** par **1** si le consommateur utilise un langage soutenu.  - Réponds **uniquement** par **0** si le consommateur n'utilise pas un langage soutenu. N'ajoute aucun texte supplémentaire, réponds seulement par **1** ou **0**."
 
-import re
 def juges(data, prompt, sexe, nom_nouvelle_colonne):
-    sexe = sexe.lower()
-    if sexe == "homme":
-        sexe = "BEA2"
-    else:
-        sexe = "BEA1"
+    """
+    Fonction qui applique un prompt aux réponses de beauté en fonction du sexe 
+    et ajoute de nouvelles colonnes au dataframe avec les résultats.
+
+    :param data: DataFrame contenant les réponses des consommateurs.
+    :param prompt: Le prompt utilisé pour interroger le modèle.
+    :param sexe: Le sexe du consommateur (homme ou femme).
+    :param nom_nouvelle_colonne: Le nom de la nouvelle colonne à ajouter au DataFrame.
+    :return: Le DataFrame mis à jour avec les nouvelles colonnes.
+    """
     
-    # Initialiser une liste pour stocker toutes les valeurs des colonnes
+    # Mapping du sexe à la colonne correspondante
+    sexe = "BEA2" if sexe.lower() == "homme" else "BEA1"
+    
+    # Initialiser une liste de colonnes vides pour stocker les résultats
     colonnes = [[] for _ in range(5)]
-    k = 0
-    # Traiter les réponses uniquement pour la plage souhaitée
-    for reponse in data[sexe]:
-        print(k)
+    
+    # Traiter chaque réponse dans la colonne spécifique (selon le sexe)
+    for k, reponse in enumerate(data[sexe]):
+        print(f"Traitement de la réponse {k+1}")
+        
+        # Liste pour stocker les résultats de chaque question (5 résultats par réponse)
         liste_moyenne = []
+        
+        # Boucle pour obtenir plusieurs réponses du modèle (5 fois)
         for _ in range(5):
             prompt_complet = f"{prompt} : '{reponse}.'"
-            response: ChatResponse = chat(model='llama3.2', messages=[
-                {
-                    'role': 'user',
-                    'content': prompt_complet,
-                },
-            ])
+            response = chat(model='llama3.2', messages=[{'role': 'user', 'content': prompt_complet}])
             nombre = nombre_trouve(response['message']['content'])
             liste_moyenne.append(nombre)
         
-        # Ajouter chaque valeur de la liste dans la colonne correspondante
+        # Ajouter les résultats dans les colonnes correspondantes
         for i in range(5):
             colonnes[i].append(liste_moyenne[i])
-        k = k +1
     
     # Compléter les colonnes si nécessaire pour correspondre à la longueur du DataFrame
-    while len(colonnes[0]) < len(data):
-        for col in colonnes:
-            col.append(None)  # Ajouter des valeurs manquantes (None) pour correspondre à la longueur
+    max_length = len(data)
+    for col in colonnes:
+        col.extend([None] * (max_length - len(col)))  # Remplir avec des None si nécessaire
     
-    # Ajouter les colonnes au DataFrame
+    # Ajouter les nouvelles colonnes au DataFrame
     for i in range(5):
         data[f"{nom_nouvelle_colonne}_{i+1}"] = colonnes[i]
     
     return data
 
-
-def juges2(data, prompt, sexe, nom_nouvelle_colonne):
-    sexe = sexe.lower()
-    if sexe == "homme":
-        sexe = "BEA2"
-    else:
-        sexe = "BEA1"
-    
-    # Initialiser une liste pour stocker toutes les valeurs des colonnes
-    colonnes = [[] for _ in range(5)]
-    k = 0
-    # Traiter les réponses uniquement pour la plage souhaitée
-    for reponse in data['text']:
-        print(k)
-        liste_moyenne = []
-        for _ in range(5):
-            prompt_complet = f"{prompt} : '{reponse}.'"
-            response: ChatResponse = chat(model='llama3.2', messages=[
-                {
-                    'role': 'user',
-                    'content': prompt_complet,
-                },
-            ])
-            nombre = nombre_trouve(response['message']['content'])
-            liste_moyenne.append(nombre)
-        
-        # Ajouter chaque valeur de la liste dans la colonne correspondante
-        for i in range(5):
-            colonnes[i].append(liste_moyenne[i])
-        k = k +1
-    
-    # Compléter les colonnes si nécessaire pour correspondre à la longueur du DataFrame
-    while len(colonnes[0]) < len(data):
-        for col in colonnes:
-            col.append(None)  # Ajouter des valeurs manquantes (None) pour correspondre à la longueur
-    
-    # Ajouter les colonnes au DataFrame
-    for i in range(5):
-        data[f"{nom_nouvelle_colonne}_{i+1}"] = colonnes[i]
-    
-    return data
 
 data_juges = juges(data_questions, prompt_beauté_femme, "femme", "beauté_intérieur_femme")
 data_juges = juges(data_juges, prompt_beauté_homme, "homme", "beauté_intérieur_homme")
@@ -274,38 +228,64 @@ plt.tight_layout()
 plt.show()
 
 
-#A partir d'un jeu de données et d'un prompt, nous donne une nouvelle colonne aux jeux de données
 def ajouter_colonne(data, prompt, sexe, nom_nouvelle_colonne):
+    """
+    Fonction qui applique un prompt aux réponses en fonction du sexe 
+    et ajoute une nouvelle colonne avec les moyennes des résultats obtenus.
+
+    :param data: DataFrame contenant les réponses des consommateurs.
+    :param prompt: Le prompt utilisé pour interroger le modèle.
+    :param sexe: Le sexe du consommateur (homme ou femme).
+    :param nom_nouvelle_colonne: Le nom de la nouvelle colonne à ajouter au DataFrame.
+    :return: Le DataFrame mis à jour avec la nouvelle colonne.
+    """
+    # 1. Traiter et normaliser l'argument sexe
     sexe = sexe.lower()
     if sexe == "homme":
         sexe = "BEA2"
     else:
         sexe = "BEA1"
+    
+    # 2. Initialiser une liste pour stocker les résultats des moyennes
     list_ia = []
-    k = 0
+    
+    # 3. Parcourir les réponses pour le sexe spécifié
     for reponse in data[sexe]:
-        print(k)
+        # Initialiser une liste pour stocker les valeurs pour chaque itération
         liste_moyenne = []
+        
+        # 4. Boucle pour effectuer 5 appels à l'IA (par exemple)
         for boucle in range(5):
+            # Créer le prompt complet pour chaque appel
             prompt_complet = f"{prompt} : '{reponse}.'"
-            response: ChatResponse = chat(model='llama3.2', messages=[
-              {
-                'role': 'user',
-                'content': prompt_complet,
-              },
-            ])
+            
+            # Effectuer l'appel à l'IA et récupérer la réponse
+            response = chat(model='llama3.2', messages=[{'role': 'user', 'content': prompt_complet}])
+            
+            # Extraire le nombre de la réponse de l'IA (fonction à définir)
             nombre = nombre_trouve(response['message']['content'])
             liste_moyenne.append(nombre)
+        
+        # 5. Filtrer les valeurs valides (nombres)
         nombres = [x for x in liste_moyenne if isinstance(x, (int, float))]
-        # Calculer la moyenne
+        
+        # 6. Calculer la moyenne des valeurs valides
         if len(nombres) > 0:
-            moyenne = sum(nombres) / len(nombres)        
+            moyenne = sum(nombres) / len(nombres)
+        else:
+            moyenne = None  # Ou gérer autrement si aucune valeur valide n'est trouvée
+        
+        # 7. Ajouter la moyenne calculée à la liste
         list_ia.append(moyenne)
-        k = k + 1 
-    nouvelle_colonne = repetition(list_ia)
-    data[nom_nouvelle_colonne] = nouvelle_colonne
-    return(data)
     
+    # 8. Appliquer une fonction (comme repetition) pour ajuster la taille de la liste
+    nouvelle_colonne = repetition(list_ia)
+    
+    # 9. Ajouter la nouvelle colonne au DataFrame
+    data[nom_nouvelle_colonne] = nouvelle_colonne
+    
+    return data
+
 data_questions_nouvelles_col = ajouter_colonne(data_questions, prompt_beauté_femme, "femme", "beauté_intérieur_femme")
 data_questions_nouvelles_col = ajouter_colonne(data_questions_nouvelles_col, prompt_beauté_homme, "homme", "beauté_intérieur_homme")
 data_questions_nouvelles_col = ajouter_colonne(data_questions_nouvelles_col, prompt_complexite_femme, "femme", "complexite_femme")
